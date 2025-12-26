@@ -14,7 +14,6 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -34,7 +33,14 @@ from app.core.middlewares import (
     RequestLoggingMiddleware,
     RateLimitMiddleware,
 )
-from app.api.v1 import api_router
+
+# ATUALIZADO: Importando os novos routers explicitamente
+from app.api.v1 import (
+    api_router,     # Routers antigos (Health, Auth, Agents) agregados no __init__
+    processes,      # Fase 5A
+    executions,     # Fase 5B
+    governance      # Assets & Credenciais
+)
 
 
 # Configurar logging antes de tudo
@@ -50,16 +56,6 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI) -> AsyncGenerator:
     """
     Gerencia eventos de startup e shutdown da aplicação.
-    
-    Startup:
-        - Inicializa conexão com PostgreSQL
-        - Inicializa conexão com Redis
-        - Valida configurações críticas
-    
-    Shutdown:
-        - Fecha conexão com PostgreSQL
-        - Fecha conexão com Redis
-        - Limpa recursos
     """
     # ========================================================================
     # STARTUP
@@ -82,7 +78,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
         # Inicializa Redis
         await init_redis()
         
-        # TODO: Criar tabelas em desenvolvimento (usar Alembic em produção)
+        # Em DEV, pode-se descomentar para criar tabelas, mas recomendamos Alembic
         # if settings.is_development:
         #     from app.core.database import create_db_and_tables
         #     await create_db_and_tables()
@@ -128,9 +124,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 def create_application() -> FastAPI:
     """
     Factory para criar e configurar a aplicação FastAPI.
-    
-    Returns:
-        FastAPI app configurada
     """
     # Cria aplicação
     app = FastAPI(
@@ -143,7 +136,6 @@ def create_application() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
-        # Metadata adicional
         contact={
             "name": "RPA Orchestrator Team",
             "email": "support@rpaorchestrator.com",
@@ -167,16 +159,15 @@ def create_application() -> FastAPI:
     # ========================================================================
     # CUSTOM MIDDLEWARES
     # ========================================================================
-    # Ordem importa: últimos adicionados são executados primeiro
     
-    # Rate limiting (primeiro a verificar)
+    # Rate limiting
     if settings.RATE_LIMIT_ENABLED:
         app.add_middleware(RateLimitMiddleware)
     
     # Request logging
     app.add_middleware(RequestLoggingMiddleware)
     
-    # Correlation ID (deve ser um dos primeiros para garantir ID em todos logs)
+    # Correlation ID
     app.add_middleware(CorrelationIDMiddleware)
     
     # ========================================================================
@@ -190,10 +181,33 @@ def create_application() -> FastAPI:
     # ========================================================================
     # ROUTERS
     # ========================================================================
-    # Inclui routers versionados
+    
+    # 1. Routers Base (Auth, Agents, Health)
+    # Assumindo que api_router agrega estes no __init__.py de v1
     app.include_router(
         api_router,
         prefix=settings.api_prefix
+    )
+    
+    # 2. Novos Routers - Fase 5A: Processos
+    app.include_router(
+        processes.router,
+        prefix=f"{settings.api_prefix}/processes",
+        tags=["Processos"]
+    )
+
+    # 3. Novos Routers - Fase 5B: Execuções
+    app.include_router(
+        executions.router,
+        prefix=f"{settings.api_prefix}/executions",
+        tags=["Execuções"]
+    )
+
+    # 4. Novos Routers - Governança: Assets & Credenciais
+    app.include_router(
+        governance.router,
+        prefix=f"{settings.api_prefix}/governance",
+        tags=["Governança"]
     )
     
     # ========================================================================
@@ -220,21 +234,14 @@ def create_application() -> FastAPI:
 
 
 # ============================================================================
-# APP INSTANCE
+# APP INSTANCE & RUNNER
 # ============================================================================
 
-# Cria instância da aplicação
 app = create_application()
-
-
-# ============================================================================
-# STARTUP MESSAGE
-# ============================================================================
 
 if __name__ == "__main__":
     import uvicorn
     
-    # Configuração do servidor
     uvicorn_config = {
         "app": "app.main:app",
         "host": settings.HOST,

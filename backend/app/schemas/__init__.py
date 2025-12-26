@@ -33,6 +33,14 @@ from .agent import (
     HeartbeatResponse,
 )
 
+from .workload import (
+    ItemFilaCreate,
+    ItemFilaRead,
+    ExcecaoCreate,
+    ExcecaoRead,
+    WorkloadActionResponse
+)
+
 __all__ = [
     # Common
     "BaseSchema",
@@ -60,4 +68,11 @@ __all__ = [
     "AgentFilterParams",
     "HeartbeatRequest",
     "HeartbeatResponse",
+
+    # Workload (ADICIONADO AQUI)
+    "ItemFilaCreate",
+    "ItemFilaRead",
+    "ExcecaoCreate",
+    "ExcecaoRead",
+    "WorkloadActionResponse",
 ]
