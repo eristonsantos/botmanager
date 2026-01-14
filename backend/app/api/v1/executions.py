@@ -112,3 +112,20 @@ async def get_execution_summary(
 ):
     service = ExecutionService(session)
     return await service.get_summary_stats(tenant_id, days)
+
+from app.schemas.execution import ExecutionUpdate # Certifique-se que importa isto
+
+@router.patch(
+    "/{execution_id}",
+    response_model=ExecutionRead,
+    summary="Atualizar Estado da Execução",
+    description="Usado pelo Robô para reportar progresso, sucesso ou falha."
+)
+async def update_execution_status(
+    execution_id: UUID,
+    update_data: ExecutionUpdate,
+    tenant_id: UUID = Depends(get_current_tenant_id),
+    session: AsyncSession = Depends(get_session)
+):
+    service = ExecutionService(session)
+    return await service.update_execution_status(tenant_id, execution_id, update_data)

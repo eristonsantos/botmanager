@@ -10,10 +10,15 @@ Orquestrador de automações RPA multi-tenant com suporte a:
 - Credenciais e assets
 - Monitoramento e auditoria
 """
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -34,12 +39,17 @@ from app.core.middlewares import (
     RateLimitMiddleware,
 )
 
-# ATUALIZADO: Importando os novos routers explicitamente
+# ============================================================================
+# IMPORTS DOS ROUTERS
+# ============================================================================
+# Importamos o 'api_router' (que agrupa auth, agents, health)
+# e os módulos individuais das novas fases para registro explícito.
 from app.api.v1 import (
-    api_router,     # Routers antigos (Health, Auth, Agents) agregados no __init__
-    processes,      # Fase 5A
-    executions,     # Fase 5B
-    governance      # Assets & Credenciais
+    api_router,     # Agrupa: Auth, Agents, Health
+    processes,      # Fase 5A: Processos e Versões
+    executions,     # Fase 5B: Execuções e Disparos
+    governance,     # Governança: Assets e Credenciais
+    workload        # Workload: Filas e Itens
 )
 
 
@@ -56,6 +66,14 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI) -> AsyncGenerator:
     """
     Gerencia eventos de startup e shutdown da aplicação.
+    
+    Startup:
+        - Inicializa conexão com PostgreSQL
+        - Inicializa conexão com Redis
+    
+    Shutdown:
+        - Fecha conexões
+        - Limpa recursos
     """
     # ========================================================================
     # STARTUP
@@ -78,11 +96,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
         # Inicializa Redis
         await init_redis()
         
-        # Em DEV, pode-se descomentar para criar tabelas, mas recomendamos Alembic
+        # Em DEV, pode-se descomentar para criar tabelas (mas prefira Alembic)
         # if settings.is_development:
         #     from app.core.database import create_db_and_tables
         #     await create_db_and_tables()
         
+        
+
         logger.info(
             f"{settings.APP_NAME} started successfully!",
             extra={
@@ -159,6 +179,7 @@ def create_application() -> FastAPI:
     # ========================================================================
     # CUSTOM MIDDLEWARES
     # ========================================================================
+    # Ordem importa: últimos adicionados são executados primeiro no request
     
     # Rate limiting
     if settings.RATE_LIMIT_ENABLED:
@@ -167,7 +188,7 @@ def create_application() -> FastAPI:
     # Request logging
     app.add_middleware(RequestLoggingMiddleware)
     
-    # Correlation ID
+    # Correlation ID (Primeiro a ser processado para garantir ID em tudo)
     app.add_middleware(CorrelationIDMiddleware)
     
     # ========================================================================
@@ -183,31 +204,38 @@ def create_application() -> FastAPI:
     # ========================================================================
     
     # 1. Routers Base (Auth, Agents, Health)
-    # Assumindo que api_router agrega estes no __init__.py de v1
+    # Definidos em app/api/v1/__init__.py
     app.include_router(
         api_router,
-        prefix=settings.api_prefix
+        prefix=settings.api_prefix  # ex: /api/v1
     )
     
-    # 2. Novos Routers - Fase 5A: Processos
+    # 2. Novos Routers (Módulos Individuais)
+    # Cada router define seu prefixo interno (ex: prefix="/processes")
+    # Ao incluir, usamos apenas o prefixo base da API.
+    
     app.include_router(
         processes.router,
-        prefix=f"{settings.api_prefix}/processes",
-        tags=["Processos"]
+        prefix=settings.api_prefix,
+        # tags=["Processos"] já definido no router
     )
 
-    # 3. Novos Routers - Fase 5B: Execuções
     app.include_router(
         executions.router,
-        prefix=f"{settings.api_prefix}/executions",
-        tags=["Execuções"]
+        prefix=settings.api_prefix,
+        # tags=["Execuções"] já definido no router
     )
 
-    # 4. Novos Routers - Governança: Assets & Credenciais
     app.include_router(
         governance.router,
-        prefix=f"{settings.api_prefix}/governance",
-        tags=["Governança"]
+        prefix=settings.api_prefix,
+        # tags=["Governança"] já definido no router
+    )
+    
+    app.include_router(
+        workload.router,
+        prefix=settings.api_prefix,
+        # tags=["Workload"] já definido no router
     )
     
     # ========================================================================
@@ -242,6 +270,7 @@ app = create_application()
 if __name__ == "__main__":
     import uvicorn
     
+    # Configuração do servidor
     uvicorn_config = {
         "app": "app.main:app",
         "host": settings.HOST,

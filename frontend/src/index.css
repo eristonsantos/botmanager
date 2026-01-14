@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+
+    color-scheme: dark;
+    /* Força modo escuro nativo do browser */
+}
+
+body {
+    margin: 0;
+    /* Aplica o fundo CognitX Dark em tudo */
+    @apply bg-cognitx-dark text-slate-200;
+    min-width: 320px;
+    min-height: 100vh;
+}
+
+/* --- Scrollbar Customizada (Fica muito mais pro) --- */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    @apply bg-cognitx-dark;
+}
+
+::-webkit-scrollbar-thumb {
+    @apply bg-slate-700 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    @apply bg-cognitx-main;
+}

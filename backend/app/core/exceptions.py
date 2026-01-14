@@ -105,8 +105,9 @@ class ConflictError(AppException):
         )
 
 
-class BusinessRuleError(AppException):
-    """Violação de regra de negócio."""
+# Renomeado de BusinessRuleError para BusinessError para manter consistência com services
+class BusinessError(AppException):
+    """Violação de regra de negócio (Ex: processo inativo, saldo insuficiente)."""
     
     def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
         super().__init__(
@@ -148,18 +149,7 @@ def create_error_response(
     details: Optional[Dict[str, Any]] = None,
     correlation_id: Optional[str] = None
 ) -> JSONResponse:
-    """
-    Cria uma resposta de erro padronizada.
-    
-    Args:
-        status_code: Código HTTP do erro
-        message: Mensagem de erro
-        details: Detalhes adicionais do erro
-        correlation_id: ID de correlação da requisição
-    
-    Returns:
-        JSONResponse com estrutura padronizada
-    """
+    """Cria uma resposta de erro padronizada."""
     error_response = {
         "error": {
             "message": message,

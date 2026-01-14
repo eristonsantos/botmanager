@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPA Worker Control</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="header">
+            <div class="header-content">
+                <h1>🤖 RPA Worker</h1>
+                <span class="version" id="version">v1.0.0</span>
+            </div>
+            <nav class="tabs-nav">
+                <button class="tab-btn active" data-tab="dashboard">📊 Dashboard</button>
+                <button class="tab-btn" data-tab="config">⚙️ Configuração</button>
+                <button class="tab-btn" data-tab="logs">📝 Logs</button>
+            </nav>
+        </header>
+
+        <main class="main-content">
+
+            <div id="dashboard" class="tab-content active">
+                <div class="card status-card">
+                    <h2>Status do Serviço</h2>
+                    <div class="status-grid">
+                        <div class="status-item main-status">
+                            <span class="status-label">Estado Atual</span>
+                            <div class="status-badge-container">
+                                <span id="status-indicator" class="indicator offline"></span>
+                                <span id="status-text">Verificando...</span>
+                            </div>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Último Heartbeat</span>
+                            <span id="last-heartbeat" class="status-value">-</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Execução Ativa</span>
+                            <span id="active-execution" class="status-value">Nenhuma</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">ID do Agente</span>
+                            <span id="display-worker-name" class="status-value small">-</span>
+                        </div>
+                    </div>
+
+                    <div class="stats-mini-grid">
+                        <div class="stat-box">
+                            <span class="stat-number" id="stats-completed">0</span>
+                            <span class="stat-desc">Sucessos</span>
+                        </div>
+                        <div class="stat-box error">
+                            <span class="stat-number" id="stats-failed">0</span>
+                            <span class="stat-desc">Falhas</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-grid">
+                    <button id="btn-start" class="btn btn-success">
+                        ▶ Iniciar Serviço
+                    </button>
+                    <button id="btn-stop" class="btn btn-danger" disabled>
+                        ⏹ Parar Serviço
+                    </button>
+                    <button id="btn-refresh" class="btn btn-secondary">
+                        🔄 Atualizar
+                    </button>
+                    <button id="btn-kill" class="btn btn-warning" disabled>
+                        ☠️ Matar Processo
+                    </button>
+                </div>
+            </div>
+
+            <div id="config" class="tab-content">
+                <div class="card config-card">
+                    <h2>Configurações de Conexão</h2>
+                    <form id="config-form">
+                        <div class="form-group">
+                            <label for="orchestrator-url">URL do Orquestrador</label>
+                            <input type="url" id="orchestrator-url" placeholder="http://localhost:8000" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="api-key">Senha do Robô (ou API Key)</label>
+                            <div class="input-wrapper">
+                                <input type="password" id="api-key" placeholder="Senha do usuário robô" required>
+                                <button type="button" class="btn-icon" id="toggle-api-key">👁️</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tenant-id">Tenant ID (Opcional)</label>
+                            <input type="text" id="tenant-id" placeholder="Preenchido automaticamente no login">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="worker-name">Nome do Worker</label>
+                            <input type="text" id="worker-name" placeholder="RPA-Worker-01" required>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                💾 Salvar e Aplicar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="logs" class="tab-content">
+                <div class="logs-container">
+                    <div class="logs-toolbar">
+                        <span>Console de Saída</span>
+                        <button id="btn-clear-logs" class="btn btn-small btn-secondary">Limpar</button>
+                    </div>
+                    <div id="log-output" class="log-output"></div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+
+</html>

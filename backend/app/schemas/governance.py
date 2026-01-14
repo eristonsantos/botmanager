@@ -1,69 +1,98 @@
 # backend/app/schemas/governance.py
-from datetime import datetime
-from typing import Optional, Any
+from typing import List, Optional
 from uuid import UUID
+from datetime import datetime
+from enum import Enum
+from pydantic import BaseModel, ConfigDict
 
-from pydantic import BaseModel, Field, field_validator
+# Usando minúsculo para bater com o Model
+class TipoAssetEnum(str, Enum):
+    text = "text"
+    integer = "integer"
+    boolean = "boolean"
+    json = "json"
 
-from app.models.governance import TipoAssetEnum, ScopeAssetEnum, TipoCredencialEnum
-from app.schemas.common import PaginationParams
+# --- ASSETS ---
 
-# ================= ASSETS =================
+class AssetCreate(BaseModel):
+    name: str
+    value: str
+    description: Optional[str] = None
+    tipo: TipoAssetEnum = TipoAssetEnum.text
+    scope: str = "global"
 
-class AssetBase(BaseModel):
-    name: str = Field(..., max_length=100)
-    tipo: TipoAssetEnum
-    value: str  # O frontend deve enviar stringificado
-    description: Optional[str] = Field(None, max_length=500)
-    scope: ScopeAssetEnum = ScopeAssetEnum.GLOBAL
-    scope_id: Optional[UUID] = None
-
-class AssetCreate(AssetBase):
-    pass
-
+# --- ADICIONADO QUE FALTAVA ---
 class AssetUpdate(BaseModel):
     value: Optional[str] = None
     description: Optional[str] = None
-    # Geralmente não se muda o tipo ou escopo após criar para evitar quebra de contratos
+# ------------------------------
 
-class AssetRead(AssetBase):
+class AssetRead(BaseModel):
     id: UUID
     tenant_id: UUID
-    created_at: datetime
+    name: str
+    value: str
+    tipo: TipoAssetEnum
+    description: Optional[str] = None
+    scope: str
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
-class AssetFilterParams(PaginationParams):
+class AssetFilterParams(BaseModel):
     name: Optional[str] = None
-    scope: Optional[ScopeAssetEnum] = None
-    processo_id: Optional[UUID] = None
+    skip: int = 0
+    limit: int = 100
 
-# ================= CREDENCIAIS =================
+# --- CREDENCIAIS ---
 
-class CredencialBase(BaseModel):
-    name: str = Field(..., max_length=100)
-    tipo: TipoCredencialEnum
-    username: Optional[str] = Field(None, max_length=255)
-    extra_data: dict = Field(default_factory=dict)
-    rotation_days: Optional[int] = None
-
-class CredencialCreate(CredencialBase):
-    password: str = Field(..., description="Senha em texto plano (será encriptada)")
-
-class CredencialUpdate(BaseModel):
+class CredencialCreate(BaseModel):
+    name: str
+    password: str
     username: Optional[str] = None
-    password: Optional[str] = Field(None, description="Nova senha para rotação")
-    extra_data: Optional[dict] = None
+    description: Optional[str] = None
+
+# --- ADICIONADO QUE FALTAVA ---
+class CredencialUpdate(BaseModel):
+    password: Optional[str] = None
+    username: Optional[str] = None
+    description: Optional[str] = None
+# ------------------------------
+
+class CredencialRead(BaseModel):
+    id: UUID
+    name: str
+    username: Optional[str] = None
+    description: Optional[str] = None
+    last_rotated: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class CredencialRevealed(CredencialRead):
+    value: str
+
+
+# --- AGENDAMENTOS (TRIGGERS) ---
+class AgendamentoCreate(BaseModel):
+    name: str
+    cron_expression: str  # Ex: "0 8 * * *"
+    process_id: Optional[UUID] = None
+    is_active: bool = True
+
+class AgendamentoUpdate(BaseModel):
+    name: Optional[str] = None
+    cron_expression: Optional[str] = None
     is_active: Optional[bool] = None
 
-class CredencialRead(CredencialBase):
+class AgendamentoRead(BaseModel):
     id: UUID
     tenant_id: UUID
-    expires_at: Optional[datetime]
-    last_rotated: Optional[datetime]
-    # NOTE: NUNCA retornamos encrypted_password aqui
-    
-    class Config:
-        from_attributes = True
+    name: str
+    cron_expression: str
+    process_id: Optional[UUID] = None
+    is_active: bool
+    last_run: Optional[datetime] = None
+    next_run: Optional[datetime] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

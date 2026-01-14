@@ -40,7 +40,7 @@ from .workload import (
     ItemFila,
     Excecao,
     # Enums
-    PriorityEnum,
+    # PriorityEnum,
     StatusItemFilaEnum,
     TipoExcecaoEnum,
     SeverityEnum
@@ -67,6 +67,7 @@ from .monitoring import (
     LogLevelEnum,
     TipoMetadataEnum
 )
+
 
 # Lista de exportação explícita
 __all__ = [

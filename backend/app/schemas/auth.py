@@ -57,10 +57,11 @@ class GlobalRegistration(BaseSchema):
     admin_user: UserCreate
 
 # ==================== AUTH SCHEMAS ====================
-
 class LoginRequest(BaseSchema):
     email: EmailStr
     password: str
+    # ADICIONADO: Campo opcional para login em multi-tenant
+    tenant_slug: Optional[str] = None 
 
 class RefreshTokenRequest(BaseSchema):
     refresh_token: str
@@ -70,3 +71,9 @@ class TokenResponse(BaseSchema):
     refresh_token: str
     token_type: str = "bearer"
     user: UserRead
+
+class RobotCreate(BaseSchema):
+    """Schema específico para criar usuários de robô via Frontend"""
+    name: str = Field(..., min_length=2, description="Nome do Robô (ex: Robô Financeiro)")
+    email: EmailStr = Field(..., description="Email de acesso do Robô")
+    password: str = Field(..., min_length=6, description="Senha de acesso")

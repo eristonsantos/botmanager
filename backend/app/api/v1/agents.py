@@ -75,7 +75,7 @@ def _agent_to_read(agent) -> AgentRead:
     if agent.last_heartbeat:
         time_diff = datetime.utcnow() - agent.last_heartbeat.replace(tzinfo=None)
         is_online = (
-            time_diff < timedelta(minutes=5) and 
+            time_diff < timedelta(seconds=45) and 
             agent.status != StatusAgenteEnum.MAINTENANCE
         )
     
@@ -157,7 +157,7 @@ async def list_agents(
     )
     
     service = AgentService(session)
-    agents, total = await service.list_agents(tenant_id, filters)
+    agents, total = await service.list(tenant_id, filters)
     
     return PaginatedResponse.create(
         items=[_agent_to_read(agent) for agent in agents],

@@ -1,63 +1,68 @@
 # backend/app/schemas/workload.py
-from datetime import datetime
-from typing import Optional, Any, Dict
+from typing import Optional, Dict, Any
 from uuid import UUID
-from pydantic import Field, ConfigDict
+from datetime import datetime
+from pydantic import BaseModel, ConfigDict, Field
 
+# IMPORTANTE: Importamos os Enums do modelo para garantir consistência
 from app.models.workload import PriorityEnum, StatusItemFilaEnum, TipoExcecaoEnum, SeverityEnum
-from .common import BaseSchema, TimestampMixin, TenantMixin
 
-# ==================== ITEM DE FILA SCHEMAS ====================
+# --- ITEM FILA ---
 
-class ItemFilaBase(BaseSchema):
-    """Campos base para um item de fila."""
-    queue_name: str = Field(..., min_length=1, max_length=100, examples=["processamento_faturas"])
-    priority: PriorityEnum = Field(default=PriorityEnum.NORMAL)
-    payload: Dict[str, Any] = Field(
-        ..., 
-        description="Dados JSON que o robô usará para o processamento"
-    )
-    reference: Optional[str] = Field(None, max_length=100, description="ID externo para rastreio")
-    deferred_until: Optional[datetime] = None
-    max_retries: int = Field(default=3, ge=0)
+class ItemFilaCreate(BaseModel):
+    queue_name: str
+    reference: Optional[str] = None
+    payload: Dict[str, Any] = Field(default_factory=dict)
+    
+    # Valida string "normal" e converte para Enum automaticamente
+    priority: PriorityEnum = PriorityEnum.NORMAL 
+    
+    max_retries: int = 3
+    processo_id: Optional[UUID] = None
 
-class ItemFilaCreate(ItemFilaBase):
-    """Request para criar novos itens na fila."""
-    # Pode ser associado a uma execução específica se iniciado por um processo
-    execucao_id: Optional[UUID] = None
-
-class ItemFilaRead(ItemFilaBase, TimestampMixin, TenantMixin):
-    """Resposta completa do item da fila."""
-    id: UUID
-    status: StatusItemFilaEnum
-    retry_count: int
-    locked_until: Optional[datetime] = None
+class ItemFilaUpdate(BaseModel):
+    status: Optional[StatusItemFilaEnum] = None
+    payload: Optional[Dict[str, Any]] = None
+    retry_count: Optional[int] = None
     locked_by: Optional[UUID] = None
-    completed_at: Optional[datetime] = None
 
-# ==================== EXCEÇÃO SCHEMAS ====================
-
-class ExcecaoCreate(BaseSchema):
-    """Payload enviado pelo robô quando ocorre um erro."""
-    tipo: TipoExcecaoEnum
-    severity: SeverityEnum = Field(default=SeverityEnum.MEDIUM)
-    message: str = Field(..., min_length=1)
-    stack_trace: Optional[str] = None
-    screenshot_path: Optional[str] = None
-    context: Optional[Dict[str, Any]] = None
-
-class ExcecaoRead(ExcecaoCreate, TimestampMixin, TenantMixin):
-    """Leitura de erro para o Dashboard."""
+class ItemFilaRead(BaseModel):
     id: UUID
-    item_fila_id: Optional[UUID] = None
-    execucao_id: Optional[UUID] = None
-    is_resolved: bool
-    resolved_at: Optional[datetime] = None
+    tenant_id: UUID
+    queue_name: str
+    status: StatusItemFilaEnum
+    priority: PriorityEnum
+    payload: Dict[str, Any]
+    reference: Optional[str] = None
+    retry_count: int
+    max_retries: int
+    created_at: datetime
+    updated_at: datetime
+    completed_at: Optional[datetime] = None # Campo calculado ou real se tiver
+    locked_by: Optional[UUID] = None
+    
+    model_config = ConfigDict(from_attributes=True)
 
-# ==================== CONTROLO DE FLUXO ====================
-
-class WorkloadActionResponse(BaseSchema):
-    """Resposta padrão para ações de sucesso/erro do agente."""
+class WorkloadActionResponse(BaseModel):
     success: bool
-    status_final: StatusItemFilaEnum
     message: str
+    item_id: Optional[UUID] = None
+
+# --- EXCEÇÃO ---
+
+class ExcecaoCreate(BaseModel):
+    tipo: TipoExcecaoEnum = TipoExcecaoEnum.SYSTEM
+    severity: SeverityEnum = SeverityEnum.MEDIUM
+    message: str
+    stack_trace: Optional[str] = None
+    execucao_id: Optional[UUID] = None
+    item_fila_id: Optional[UUID] = None
+
+class ExcecaoRead(BaseModel):
+    id: UUID
+    tipo: TipoExcecaoEnum
+    severity: SeverityEnum
+    message: str
+    created_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)

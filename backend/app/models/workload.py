@@ -4,15 +4,14 @@ from enum import Enum
 from typing import Optional, TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Column, JSON, String, Index, Text, DateTime
+from sqlalchemy import Column, JSON, Text
 from sqlmodel import Field, Relationship
-
 from .base import BaseModel
 
 if TYPE_CHECKING:
     from .core import Processo, Agente, Execucao
 
-# ==================== ENUMS ====================
+# ==================== ENUMS OFICIAIS ====================
 
 class PriorityEnum(str, Enum):
     LOW = "low"
@@ -22,16 +21,15 @@ class PriorityEnum(str, Enum):
 
 class StatusItemFilaEnum(str, Enum):
     PENDING = "pending"
-    PROCESSING = "processing"
+    RUNNING = "running"      # <--- PADRONIZADO (Era processing)
     COMPLETED = "completed"
     FAILED = "failed"
     RETRY = "retry"
     DEFERRED = "deferred"
 
-# ESTE É O QUE ESTÁ FALTANDO:
 class TipoExcecaoEnum(str, Enum):
-    BUSINESS = "business"  # Erro de regra de negócio (não retenta)
-    SYSTEM = "system"      # Erro de sistema/infra (permite retenta)
+    BUSINESS = "business"
+    SYSTEM = "system"
 
 class SeverityEnum(str, Enum):
     LOW = "low"
@@ -58,7 +56,8 @@ class ItemFila(BaseModel, table=True):
     locked_by: Optional[UUID] = Field(default=None, foreign_key="agente.id")
     locked_until: Optional[datetime] = Field(default=None)
 
-    processo_id: UUID = Field(foreign_key="processo.id", index=True)
+    # Permitindo nulo para criação avulsa
+    processo_id: Optional[UUID] = Field(default=None, foreign_key="processo.id", index=True, nullable=True)
     execucao_id: Optional[UUID] = Field(default=None, foreign_key="execucao.id")
 
 class Excecao(BaseModel, table=True):
@@ -69,5 +68,5 @@ class Excecao(BaseModel, table=True):
     message: str = Field(sa_column=Column(Text))
     stack_trace: Optional[str] = Field(default=None, sa_column=Column(Text))
     
-    execucao_id: UUID = Field(foreign_key="execucao.id", index=True)
+    execucao_id: Optional[UUID] = Field(default=None, foreign_key="execucao.id", index=True)
     item_fila_id: Optional[UUID] = Field(default=None, foreign_key="item_fila.id")

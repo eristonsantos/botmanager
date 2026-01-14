@@ -52,3 +52,22 @@ build/
 postgres_data/
 redis_data/
 data/
+
+# --- FRONTEND (Node/React) ---
+node_modules/
+dist/
+build/
+.next/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json  # Opcional: Alguns preferem comitar, mas se der conflito, ignore.
+yarn.lock          # Opcional: Idem acima.
+
+# --- WORKER (Rust/Tauri) ---
+target/
+Cargo.lock         # Geralmente se comita, mas se estiver testando, pode ignorar por enquanto.
+**/*.rs.bk
+
+# --- MAC OS (Reforço) ---
+.DS_Store

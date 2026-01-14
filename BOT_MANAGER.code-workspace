@@ -5,35 +5,96 @@
             "path": "backend"
         },
         {
-            "name": "🐳 INFRA: Docker",
-            "path": "." 
+            "name": "🤖 RPA: Worker",
+            "path": "worker"
+        },
+        {
+            "name": "💻 UI: Frontend",
+            "path": "frontend"
+        },
+        {
+            "name": "🐳 INFRA: Root",
+            "path": "."
         }
     ],
     "settings": {
+        // --- PYTHON SETTINGS ---
         "python.defaultInterpreterPath": "backend/.venv/bin/python",
         "python.terminal.activateEnvironment": true,
         "python.analysis.autoSearchPaths": true,
-        "python.analysis.extraPaths": ["./backend"],
-        "editor.formatOnSave": true,
+        "python.analysis.extraPaths": [
+            "./backend",
+            "./worker"
+        ],
         "python.testing.pytestEnabled": true,
-        "python.testing.pytestArgs": ["backend/tests"]
+        "python.testing.pytestArgs": [
+            "backend/tests"
+        ],
+        // --- FRONTEND SETTINGS ---
+        "[typescript]": {
+            "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[typescriptreact]": {
+            "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[json]": {
+            "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        // --- GENERAL ---
+        "editor.formatOnSave": true,
+        "files.exclude": {
+            "**/.git": true,
+            "**/.DS_Store": true,
+            "**/__pycache__": true,
+            "**/.pytest_cache": true,
+            "**/node_modules": true,
+            "**/.next": true
+        }
     },
     "launch": {
         "version": "0.2.0",
         "configurations": [
             {
-                "name": "🐍 FastAPI: Run Dev",
+                "name": "🐍 API: Run Server",
                 "type": "python",
                 "request": "launch",
                 "module": "uvicorn",
                 "args": [
                     "app.main:app",
                     "--reload",
-                    "--host", "0.0.0.0",
-                    "--port", "8000"
+                    "--host",
+                    "0.0.0.0",
+                    "--port",
+                    "8000"
                 ],
                 "jinja": true,
-                "cwd": "${workspaceFolder:🚀 API: Backend}"
+                "cwd": "${workspaceFolder:🚀 API: Backend}",
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder:🚀 API: Backend}"
+                }
+            },
+            {
+                "name": "🤖 Worker: Run Agent",
+                "type": "python",
+                "request": "launch",
+                "program": "main.py",
+                "console": "integratedTerminal",
+                "cwd": "${workspaceFolder:🤖 RPA: Worker}",
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder:🤖 RPA: Worker}"
+                }
+            },
+            {
+                "name": "💻 UI: Run Dev",
+                "type": "node",
+                "request": "launch",
+                "runtimeExecutable": "npm",
+                "runtimeArgs": [
+                    "run",
+                    "dev"
+                ],
+                "console": "integratedTerminal",
+                "cwd": "${workspaceFolder:💻 UI: Frontend}"
             }
         ]
     }
